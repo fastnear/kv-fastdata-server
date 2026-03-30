@@ -135,3 +135,23 @@ Entries match input `keys` order. `null` = not found.
 
 - 400: `{"error": "description"}` - invalid request
 - 500: `{"error": "Internal error"}` - server error
+
+## Writing Data
+
+Write data by calling `__fastdata_kv` on any NEAR account with a JSON object argument.
+
+- The caller is `predecessor_id`, the target is `current_account_id`
+- The target account does NOT need to have a contract or exist on chain
+- Root-level keys of the JSON become stored keys; values are stored as-is
+- Max 256 keys per call, max 1,024 bytes per key, max 256 KB per value
+
+```bash
+# Store a single value
+near call my-app.near __fastdata_kv '{"score": 1500}' --accountId alice.near
+
+# Store multiple keys
+near call my-app.near __fastdata_kv '{"settings/lang": "en", "settings/volume": 80}' --accountId alice.near
+
+# Use any account as namespace (doesn't need to exist)
+near call data-store.alice.near __fastdata_kv '{"hello": "world"}' --accountId alice.near
+```

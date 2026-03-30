@@ -191,6 +191,43 @@
 </table>
 <p>Error body: <code>{"error": "description"}</code></p>
 
+<h2>Writing Data</h2>
+
+<p>Data is written by sending a NEAR transaction. Call the method <code>__fastdata_kv</code> on any account, passing a JSON object as the argument. The root-level keys of the JSON become your KV keys, and the values are stored as-is.</p>
+
+<div class="note">
+  The target account (<code>current_account_id</code>) does <strong>not</strong> need to have a smart contract deployed, or even exist on chain. The data is indexed from the transaction itself, not from contract state.
+</div>
+
+<h3>How it works</h3>
+<ul>
+  <li>Your account (<code>predecessor_id</code>) calls <code>__fastdata_kv</code> on a target account (<code>current_account_id</code>)</li>
+  <li>The JSON argument's root keys become the stored keys</li>
+  <li>Values can be any valid JSON: strings, numbers, objects, arrays, booleans, null</li>
+  <li>Multiple keys can be written in a single call (max 256 keys)</li>
+  <li>Max key length: 1,024 bytes. Max value size: 256 KB (serialized)</li>
+</ul>
+
+<h3>Example: Store a single value</h3>
+<pre><code>near call my-app.near __fastdata_kv '{"score": 1500}' --accountId alice.near</code></pre>
+<p>This stores key <code>score</code> with value <code>1500</code>, readable at:</p>
+<pre><code>GET {{HOSTNAME}}/v0/latest/my-app.near/alice.near/score</code></pre>
+
+<h3>Example: Store multiple keys at once</h3>
+<pre><code>near call my-app.near __fastdata_kv '{
+  "settings/lang": "en",
+  "settings/volume": 80,
+  "profile": {"name": "Alice", "level": 42}
+}' --accountId alice.near</code></pre>
+<p>This stores three keys in one transaction. Query all settings with a prefix filter:</p>
+<pre><code>curl -X POST {{HOSTNAME}}/v0/latest/my-app.near/alice.near \
+  -H "Content-Type: application/json" \
+  -d '{"key_prefix":"settings/"}'</code></pre>
+
+<h3>Example: Use any account as a namespace</h3>
+<pre><code>near call data-store.alice.near __fastdata_kv '{"hello": "world"}' --accountId alice.near</code></pre>
+<p>The account <code>data-store.alice.near</code> doesn't need to exist. It acts purely as a namespace for organizing your data.</p>
+
 <p style="margin-top: 3rem; color: var(--muted); font-size: 0.85rem;">
   <a href="/skill.md">Machine-readable API reference (skill.md)</a>
 </p>
