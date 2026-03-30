@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KV FastData API</title>
+<style>
+  :root { --bg: #fff; --fg: #1a1a2e; --muted: #666; --accent: #2563eb; --border: #e5e7eb; --code-bg: #f3f4f6; --pre-bg: #1e1e2e; --pre-fg: #cdd6f4; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1a1a2e; --fg: #e2e8f0; --muted: #94a3b8; --accent: #60a5fa; --border: #334155; --code-bg: #1e293b; --pre-bg: #0f172a; --pre-fg: #e2e8f0; } }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.4rem; margin-top: 2.5rem; margin-bottom: 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  p, li { margin-bottom: 0.5rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: var(--code-bg); padding: 0.15em 0.35em; border-radius: 4px; font-size: 0.9em; }
+  pre { background: var(--pre-bg); color: var(--pre-fg); padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.75rem 0 1rem; font-size: 0.85rem; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .subtitle { color: var(--muted); margin-bottom: 1.5rem; font-size: 1.05rem; }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+  th { background: var(--code-bg); font-weight: 600; }
+  .ep { display: inline-block; padding: 0.15em 0.5em; border-radius: 4px; font-weight: 600; font-size: 0.85rem; margin-right: 0.3rem; }
+  .post { background: #2563eb; color: #fff; }
+  .get { background: #16a34a; color: #fff; }
+  .path { font-weight: 600; font-family: monospace; }
+  .field { color: var(--accent); font-weight: 600; }
+  details { margin: 0.5rem 0; }
+  summary { cursor: pointer; font-weight: 500; padding: 0.3rem 0; }
+  .note { background: var(--code-bg); border-left: 3px solid var(--accent); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 0.75rem 0; }
+</style>
+</head>
+<body>
+
+<h1>KV FastData API</h1>
+<p class="subtitle">Read-only JSON API for NEAR FastData key-value storage</p>
+
+<p>All POST endpoints accept a JSON body and return JSON. Base URL: <code id="base-url">{{HOSTNAME}}</code></p>
+
+<h2>GET Endpoints</h2>
+
+<h3><span class="ep get">GET</span> <span class="path">/v0/latest/{current_account_id}/{predecessor_id}/{key}</span></h3>
+<p>Get the latest value of a specific key.</p>
+<details><summary>Example</summary>
+<pre><code>curl {{HOSTNAME}}/v0/latest/app.near/alice.near/score</code></pre>
+</details>
+
+<h3><span class="ep get">GET</span> <span class="path">/v0/history/{current_account_id}/{predecessor_id}/{key}</span></h3>
+<p>Get the full history of a specific key.</p>
+<details><summary>Example</summary>
+<pre><code>curl {{HOSTNAME}}/v0/history/app.near/alice.near/score</code></pre>
+</details>
+
+<h2>POST Endpoints</h2>
+
+<h3>Common Body Fields (all POST endpoints)</h3>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><span class="field">limit</span></td><td>integer</td><td>50</td><td>Max results per page (max 200)</td></tr>
+  <tr><td><span class="field">page_token</span></td><td>string</td><td></td><td>Pagination token from previous response</td></tr>
+  <tr><td><span class="field">include_metadata</span></td><td>boolean</td><td>false</td><td>Include <code>receipt_id</code>, <code>tx_hash</code>, <code>signer_id</code>, <code>action_index</code> in response</td></tr>
+  <tr><td><span class="field">asc</span></td><td>boolean</td><td>false</td><td>Sort history oldest-first (default is newest-first)</td></tr>
+</table>
+
+<h3><span class="ep post">POST</span> <span class="path">/v0/history/{current_account_id}/{predecessor_id}</span></h3>
+<p>Full history of KV writes by a predecessor to a contract.</p>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><span class="field">key</span></td><td>string</td><td>Exact key (optional)</td></tr>
+  <tr><td><span class="field">key_prefix</span></td><td>string</td><td>Key prefix filter (optional, mutually exclusive with <code>key</code>)</td></tr>
+</table>
+<details><summary>Example</summary>
+<pre><code>curl -X POST {{HOSTNAME}}/v0/history/app.near/alice.near \
+  -H "Content-Type: application/json" \
+  -d '{"key_prefix":"settings/"}'</code></pre>
+</details>
+
+<h3><span class="ep post">POST</span> <span class="path">/v0/latest/{current_account_id}/{predecessor_id}</span></h3>
+<p>Latest values by predecessor + contract. Same body fields.</p>
+<details><summary>Example</summary>
+<pre><code>curl -X POST {{HOSTNAME}}/v0/latest/app.near/alice.near \
+  -H "Content-Type: application/json" \
+  -d '{"key_prefix":"settings/"}'</code></pre>
+</details>
+
+<h3><span class="ep post">POST</span> <span class="path">/v0/history/{current_account_id}</span></h3>
+<p>Full history of all KV writes to a contract (all predecessors). Same body fields.</p>
+<details><summary>Example</summary>
+<pre><code>curl -X POST {{HOSTNAME}}/v0/history/app.near \
+  -H "Content-Type: application/json" \
+  -d '{"key":"score","limit":10}'</code></pre>
+</details>
+
+<h3><span class="ep post">POST</span> <span class="path">/v0/latest/{current_account_id}</span></h3>
+<p>Latest values for a contract (all predecessors). Same body fields.</p>
+
+<h3><span class="ep post">POST</span> <span class="path">/v0/history</span></h3>
+<p>Global lookup: all writes to a key across all accounts.</p>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td><span class="field">key</span></td><td>string</td><td>Yes</td><td>The key to look up</td></tr>
+</table>
+<details><summary>Example</summary>
+<pre><code>curl -X POST {{HOSTNAME}}/v0/history \
+  -H "Content-Type: application/json" \
+  -d '{"key":"score","limit":10}'</code></pre>
+</details>
+
+<h3><span class="ep post">POST</span> <span class="path">/v0/multi</span></h3>
+<p>Batch lookup: latest value for multiple keys (max 100).</p>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td><span class="field">keys</span></td><td>string[]</td><td>Yes</td><td>Array of <code>current_account_id/predecessor_id/key</code> strings</td></tr>
+</table>
+<details><summary>Example</summary>
+<pre><code>curl -X POST {{HOSTNAME}}/v0/multi \
+  -H "Content-Type: application/json" \
+  -d '{"keys":["app.near/alice.near/score","app.near/bob.near/score"]}'</code></pre>
+</details>
+
+<h2>Response Format</h2>
+
+<h3>Default response (include_metadata=false)</h3>
+<pre><code>{
+  "entries": [
+    {
+      "predecessor_id": "alice.near",
+      "current_account_id": "app.near",
+      "block_height": 123456789,
+      "block_timestamp": 1700000000000,
+      "key": "score",
+      "value": 1500
+    }
+  ],
+  "page_token": "eyJr..."
+}</code></pre>
+
+<h3>With metadata (include_metadata=true)</h3>
+<pre><code>{
+  "entries": [
+    {
+      "receipt_id": "Aw1MHvj3GHBon1GBiGMWqafBJCBMqXTPw4PoSaSEjnkQ",
+      "action_index": 0,
+      "tx_hash": "6i9brQEJzLqmLLoqCcPPQih7YeYmLZcLxjW8zGnx3LFh",
+      "signer_id": "alice.near",
+      "predecessor_id": "alice.near",
+      "current_account_id": "app.near",
+      "block_height": 123456789,
+      "block_timestamp": 1700000000000,
+      "key": "score",
+      "value": 1500
+    }
+  ]
+}</code></pre>
+
+<div class="note">
+  <strong>Note:</strong> <code>value</code> is raw JSON (number, string, object, array) as stored. <code>page_token</code> is absent when there are no more results.
+</div>
+
+<h3>Multi response</h3>
+<pre><code>{
+  "entries": [
+    {"predecessor_id": "alice.near", "current_account_id": "app.near", "key": "score", "value": 1500, ...},
+    null
+  ]
+}</code></pre>
+<p>Entries match input <code>keys</code> order. <code>null</code> = key not found.</p>
+
+<h2>Pagination</h2>
+<ol>
+  <li>Send your request (optionally with <code>limit</code>).</li>
+  <li>If the response includes <code>page_token</code>, resend same request with that token.</li>
+  <li>Repeat until <code>page_token</code> is absent.</li>
+</ol>
+
+<h2>Errors</h2>
+<table>
+  <tr><th>Status</th><th>Meaning</th></tr>
+  <tr><td>400</td><td>Invalid request (both <code>key</code> and <code>key_prefix</code> set, bad <code>page_token</code>, invalid multi key format)</td></tr>
+  <tr><td>500</td><td>Internal server error</td></tr>
+</table>
+<p>Error body: <code>{"error": "description"}</code></p>
+
+<p style="margin-top: 3rem; color: var(--muted); font-size: 0.85rem;">
+  <a href="/skill.md">Machine-readable API reference (skill.md)</a>
+</p>
+
+<script>
+  const el = document.getElementById('base-url');
+  if (el.textContent === '{{' + 'HOSTNAME}}') {
+    el.textContent = window.location.origin;
+  }
+  document.querySelectorAll('pre code').forEach(block => {
+    block.textContent = block.textContent.replace(/\{\{HOSTNAME\}\}/g, el.textContent);
+  });
+</script>
+</body>
+</html>
