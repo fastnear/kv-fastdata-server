@@ -2,6 +2,12 @@
 
 Read-only JSON API server for querying Key-Value data indexed by [kv-sub-indexer](https://github.com/fastnear/fastdata-indexer) into ScyllaDB.
 
+## Live endpoints
+
+Mainnet endpoint: https://kv.main.fastnear.com
+
+Testnet endpoint: https://kv.test.fastnear.com
+
 ## Setup
 
 ```bash
