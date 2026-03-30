@@ -64,6 +64,14 @@
   <tr><td><span class="field">asc</span></td><td>boolean</td><td>false</td><td>Sort history oldest-first (default is newest-first)</td></tr>
 </table>
 
+<h3><span class="ep post">POST</span> <span class="path">/v0/all/{predecessor_id}</span></h3>
+<p>Get <strong>latest values</strong> of all keys across all contracts for a predecessor. Must be paginated.</p>
+<details><summary>Example</summary>
+<pre><code>curl -X POST {{HOSTNAME}}/v0/all/alice.near \
+  -H "Content-Type: application/json" \
+  -d '{"limit":50}'</code></pre>
+</details>
+
 <h3><span class="ep post">POST</span> <span class="path">/v0/history/{current_account_id}/{predecessor_id}</span></h3>
 <p>Full history of KV writes by a predecessor to a contract.</p>
 <table>

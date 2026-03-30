@@ -18,6 +18,18 @@ Get full history of a specific key.
 GET {{HOSTNAME}}/v0/history/app.near/alice.near/score
 ```
 
+## POST /v0/all/{predecessor_id}
+
+Latest values of all keys across all contracts for a predecessor. No key filtering. Must use pagination.
+
+```json
+{
+  "limit": 50,                   // optional, default 50, max 200
+  "page_token": "...",            // optional
+  "include_metadata": false       // optional
+}
+```
+
 ## POST /v0/history/{current_account_id}/{predecessor_id}
 
 Full history of KV writes by a predecessor to a contract.

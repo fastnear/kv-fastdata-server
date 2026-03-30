@@ -1,7 +1,8 @@
 mod scylladb;
 
 use crate::scylladb::{
-    KeyFilter, KvRow, MvCurKeyPage, MvKeyPage, MvLastCurKeyPage, ScyllaDb, SkVLastPage, SkVPage,
+    KeyFilter, KvRow, MvCurKeyPage, MvKeyPage, MvLastCurKeyPage, ScyllaDb, SkVLastAllPage,
+    SkVLastPage, SkVPage,
 };
 use actix_cors::Cors;
 use actix_web::{middleware, web, App, HttpResponse, HttpServer};
@@ -464,6 +465,61 @@ async fn latest_by_account(
         Ok(rows) => {
             let page_token = make_page_token(&rows, limit, |last| {
                 serde_json::json!({"k": last.key, "p": last.predecessor_id})
+            });
+            let entries: Vec<KvEntry> = rows
+                .into_iter()
+                .map(|r| row_to_entry(r, meta))
+                .collect();
+            HttpResponse::Ok().json(ListResponse {
+                entries,
+                page_token,
+            })
+        }
+        Err(e) => err_500(e),
+    }
+}
+
+// POST /v0/all/{predecessor_id}
+async fn all_by_predecessor(
+    path: web::Path<String>,
+    body: web::Json<QueryRequest>,
+    state: web::Data<AppState>,
+) -> HttpResponse {
+    let predecessor_id = path.into_inner();
+    let limit = clamp_limit(body.limit);
+    let meta = body.include_metadata;
+
+    let page = match &body.page_token {
+        None => None,
+        Some(token) => {
+            let v = match decode_token(token) {
+                Ok(v) => v,
+                Err(e) => return e,
+            };
+            let a = match get_str(&v, "a") {
+                Ok(v) => v,
+                Err(e) => return e,
+            };
+            let k = match get_str(&v, "k") {
+                Ok(v) => v,
+                Err(e) => return e,
+            };
+            Some(SkVLastAllPage {
+                current_account_id: a,
+                key: k,
+            })
+        }
+    };
+
+    let rows = state
+        .scylladb
+        .query_kv_all_by_predecessor(&predecessor_id, page, limit)
+        .await;
+
+    match rows {
+        Ok(rows) => {
+            let page_token = make_page_token(&rows, limit, |last| {
+                serde_json::json!({"a": last.current_account_id, "k": last.key})
             });
             let entries: Vec<KvEntry> = rows
                 .into_iter()
@@ -970,6 +1026,10 @@ async fn main() -> std::io::Result<()> {
             // POST endpoints
             .route("/v0/history", web::post().to(history_by_key))
             .route("/v0/multi", web::post().to(multi))
+            .route(
+                "/v0/all/{predecessor_id}",
+                web::post().to(all_by_predecessor),
+            )
             .route(
                 "/v0/history/{current_account_id}",
                 web::post().to(history_by_account),

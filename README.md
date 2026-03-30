@@ -37,6 +37,7 @@ GET /v0/history/{current_account_id}/{predecessor_id}/{key}
 ### POST - Filtered Queries
 
 ```
+POST /v0/all/{predecessor_id}                            # all latest keys for a predecessor
 POST /v0/history/{current_account_id}/{predecessor_id}   # history by predecessor+account
 POST /v0/latest/{current_account_id}/{predecessor_id}    # latest by predecessor+account
 POST /v0/history/{current_account_id}                    # history by account (all predecessors)

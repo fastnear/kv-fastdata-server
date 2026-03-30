@@ -44,6 +44,11 @@ pub struct SkVLastPage {
     pub key: String,
 }
 
+pub struct SkVLastAllPage {
+    pub current_account_id: String,
+    pub key: String,
+}
+
 pub struct MvCurKeyPage {
     pub key: String,
     pub block_height: i64,
@@ -85,6 +90,10 @@ pub struct ScyllaDb {
     skv_exact_key_page: AscDesc,
     skv_prefix: AscDesc,
     skv_prefix_page: AscDesc,
+
+    // s_kv_last (all keys by predecessor)
+    skv_last_all: PreparedStatement,
+    skv_last_all_page: PreparedStatement,
 
     // s_kv_last (latest by predecessor+account)
     skv_last_no_key: PreparedStatement,
@@ -249,6 +258,16 @@ impl ScyllaDb {
                 "SELECT {ALL_COLS} FROM s_kv WHERE predecessor_id = ? \
                  AND (current_account_id, key, block_height, order_id) < (?, ?, ?, ?) \
                  AND (current_account_id, key) >= (?, ?) {SKV_DESC} LIMIT ?"
+            ),
+
+            // -- s_kv_last (all keys by predecessor) --
+            // Clustering: (current_account_id, key)
+            skv_last_all: q!(
+                "SELECT {ALL_COLS} FROM s_kv_last WHERE predecessor_id = ? LIMIT ?"
+            ),
+            skv_last_all_page: q!(
+                "SELECT {ALL_COLS} FROM s_kv_last WHERE predecessor_id = ? \
+                 AND (current_account_id, key) > (?, ?) LIMIT ?"
             ),
 
             // -- s_kv_last (latest, no ordering needed) --
@@ -503,6 +522,32 @@ impl ScyllaDb {
                     .execute_unpaged(
                         &self.skv_last_prefix_page,
                         (predecessor_id, current_account_id, &p.key, &end, limit),
+                    )
+                    .await?
+            }
+        };
+        Self::collect_rows(rows.into_rows_result()?)
+    }
+
+    // ---- s_kv_last (all keys by predecessor) ----
+
+    pub async fn query_kv_all_by_predecessor(
+        &self,
+        predecessor_id: &str,
+        page: Option<SkVLastAllPage>,
+        limit: i32,
+    ) -> anyhow::Result<Vec<KvRow>> {
+        let rows = match page {
+            None => {
+                self.scylla_session
+                    .execute_unpaged(&self.skv_last_all, (predecessor_id, limit))
+                    .await?
+            }
+            Some(p) => {
+                self.scylla_session
+                    .execute_unpaged(
+                        &self.skv_last_all_page,
+                        (predecessor_id, &p.current_account_id, &p.key, limit),
                     )
                     .await?
             }
