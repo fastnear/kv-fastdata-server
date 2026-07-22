@@ -2,6 +2,20 @@
 
 Read-only JSON API server for querying Key-Value data indexed by [kv-sub-indexer](https://github.com/fastnear/fastdata-indexer) into ScyllaDB.
 
+## OpenAPI
+
+`openapi/openapi.yaml` is generated from the Rust request/response types in
+`src/types.rs` and the operation registry in `src/openapi.rs`. It is the source of
+truth for the published API docs and is not hand-edited.
+
+```bash
+# Regenerate openapi/openapi.yaml from the Rust types
+cargo run --features openapi --bin generate-openapi
+
+# Verify the checked-in file is up to date (used in CI)
+cargo run --features openapi --bin generate-openapi -- --check
+```
+
 ## Live endpoints
 
 Mainnet endpoint: https://kv.main.fastnear.com

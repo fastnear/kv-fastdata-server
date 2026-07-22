@@ -9,7 +9,10 @@ use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use dotenv::dotenv;
-use serde::{Deserialize, Serialize};
+use kv_fastdata_server::types::{
+    AllRequest, ByKeyRequest, ErrorResponse, KvEntry, LatestRequest, ListResponse, MultiRequest,
+    MultiResponse, QueryRequest,
+};
 use serde_json::value::RawValue;
 use std::env;
 use std::sync::Arc;
@@ -22,81 +25,6 @@ const MAX_MULTI_KEYS: usize = 100;
 #[derive(Clone)]
 pub struct AppState {
     pub scylladb: Arc<ScyllaDb>,
-}
-
-// ---- Request types ----
-
-#[derive(Deserialize, Default)]
-struct QueryRequest {
-    #[serde(default)]
-    key: Option<String>,
-    #[serde(default)]
-    key_prefix: Option<String>,
-    #[serde(default)]
-    limit: Option<i32>,
-    #[serde(default)]
-    page_token: Option<String>,
-    #[serde(default)]
-    include_metadata: bool,
-    #[serde(default)]
-    asc: bool,
-}
-
-#[derive(Deserialize)]
-struct ByKeyRequest {
-    key: String,
-    #[serde(default)]
-    limit: Option<i32>,
-    #[serde(default)]
-    page_token: Option<String>,
-    #[serde(default)]
-    include_metadata: bool,
-    #[serde(default)]
-    asc: bool,
-}
-
-#[derive(Deserialize)]
-struct MultiRequest {
-    keys: Vec<String>,
-    #[serde(default)]
-    include_metadata: bool,
-}
-
-// ---- Response types ----
-
-#[derive(Serialize)]
-struct KvEntry {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    receipt_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    action_index: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    tx_hash: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    signer_id: Option<String>,
-    predecessor_id: String,
-    current_account_id: String,
-    block_height: u64,
-    block_timestamp: u64,
-    key: String,
-    value: Box<RawValue>,
-}
-
-#[derive(Serialize)]
-struct ListResponse {
-    entries: Vec<KvEntry>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    page_token: Option<String>,
-}
-
-#[derive(Serialize)]
-struct MultiResponse {
-    entries: Vec<Option<KvEntry>>,
-}
-
-#[derive(Serialize)]
-struct ErrorResponse {
-    error: String,
 }
 
 // ---- Conversions ----
@@ -303,7 +231,7 @@ async fn history_by_predecessor(
 // POST /v0/latest/{current_account_id}/{predecessor_id}
 async fn latest_by_predecessor(
     path: web::Path<(String, String)>,
-    body: web::Json<QueryRequest>,
+    body: web::Json<LatestRequest>,
     state: web::Data<AppState>,
 ) -> HttpResponse {
     let (current_account_id, predecessor_id) = path.into_inner();
@@ -423,7 +351,7 @@ async fn history_by_account(
 // POST /v0/latest/{current_account_id}
 async fn latest_by_account(
     path: web::Path<String>,
-    body: web::Json<QueryRequest>,
+    body: web::Json<LatestRequest>,
     state: web::Data<AppState>,
 ) -> HttpResponse {
     let current_account_id = path.into_inner();
@@ -482,7 +410,7 @@ async fn latest_by_account(
 // POST /v0/all/{predecessor_id}
 async fn all_by_predecessor(
     path: web::Path<String>,
-    body: web::Json<QueryRequest>,
+    body: web::Json<AllRequest>,
     state: web::Data<AppState>,
 ) -> HttpResponse {
     let predecessor_id = path.into_inner();
