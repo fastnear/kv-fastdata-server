@@ -24,7 +24,7 @@ cargo build --release
 | `CHAIN_ID` | Yes | | NEAR chain id (`mainnet`, `testnet`) |
 | `PORT` | No | `3010` | HTTP port |
 | `WEB_HOSTNAME` | No | | Public hostname for documentation links (e.g. `https://kv.api.fastnear.com`) |
-| `SCYLLA_URL` | Yes | | ScyllaDB address (e.g. `localhost:9042`) |
+| `SCYLLA_URL` | Yes | | Comma-separated ScyllaDB addresses (e.g. `localhost:9042` or `10.0.0.1:9042,10.0.0.2:9042`) |
 | `SCYLLA_SSL_CA` | No | | Path to CA cert (enables TLS) |
 | `SCYLLA_SSL_CERT` | No | | Path to client cert |
 | `SCYLLA_SSL_KEY` | No | | Path to client key |
