@@ -3,6 +3,10 @@ name = "kv-fastdata-server"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+openapi = ["dep:fastnear-openapi-generator", "dep:schemars"]
+
 [dependencies]
 # Default features minus `http2`: the server only serves HTTP/1 via `.bind()`, and every actix-http
 # release depends on h2 0.3, which has no fix for RUSTSEC-2026-0258.
@@ -28,6 +32,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 base64 = "0.22"
 futures = "0.3"
+fastnear-openapi-generator = { version = "0.2.0", optional = true }
+schemars = { version = "1.2.1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[[bin]]
+name = "generate-openapi"
+path = "src/bin/generate-openapi.rs"
+required-features = ["openapi"]
